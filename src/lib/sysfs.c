@@ -20,6 +20,7 @@
 #include "config.h"
 #include "cntrl.h"
 #include "enclosure.h"
+#include "kernel_npem.h"
 #include "list.h"
 #include "libled_private.h"
 #include "npem.h"
@@ -410,6 +411,11 @@ static void _scan_slots(struct led_ctx *ctx)
 	list_for_each(sysfs_get_cntrl_devices(ctx), cntrl_device) {
 		if (cntrl_device->cntrl_type == LED_CNTRL_TYPE_NPEM) {
 			slot = npem_slot_property_init(cntrl_device);
+			if (slot)
+				list_append_ctx(&ctx->sys.slots_list, slot, ctx);
+		}
+		if (cntrl_device->cntrl_type == LED_CNTRL_TYPE_KERNEL_NPEM) {
+			slot = kernel_npem_slot_property_init(cntrl_device);
 			if (slot)
 				list_append_ctx(&ctx->sys.slots_list, slot, ctx);
 		}

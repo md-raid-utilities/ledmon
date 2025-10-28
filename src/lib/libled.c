@@ -311,6 +311,7 @@ static const char * const ctrl_type_str[] = {
 	[LED_CNTRL_TYPE_AHCI]    = "AHCI",
 	[LED_CNTRL_TYPE_NPEM]    = "NPEM",
 	[LED_CNTRL_TYPE_AMD]     = "AMD",
+	[LED_CNTRL_TYPE_KERNEL_NPEM]     = "Kernel NPEM",
 };
 
 enum led_cntrl_type led_string_to_cntrl_type(const char *cntrl_str)

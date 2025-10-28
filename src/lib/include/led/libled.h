@@ -36,6 +36,7 @@ enum led_cntrl_type {
 	LED_CNTRL_TYPE_AHCI = 4,
 	LED_CNTRL_TYPE_NPEM = 5,
 	LED_CNTRL_TYPE_AMD = 6,
+	LED_CNTRL_TYPE_KERNEL_NPEM = 7,
 };
 
 /**

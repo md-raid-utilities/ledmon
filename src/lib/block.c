@@ -19,6 +19,7 @@
 #include "block.h"
 #include "config.h"
 #include "dellssd.h"
+#include "kernel_npem.h"
 #include "libled_private.h"
 #include "npem.h"
 #include "pci_slot.h"
@@ -75,6 +76,9 @@ static void _set_send_message_fn(struct block_device *device)
 			device->send_message_fn = scsi_smp_fill_buffer;
 		else
 			device->send_message_fn = scsi_ses_write;
+		break;
+	case LED_CNTRL_TYPE_KERNEL_NPEM:
+		device->send_message_fn = kernel_npem_write;
 		break;
 	case LED_CNTRL_TYPE_DELLSSD:
 		device->send_message_fn = dellssd_write;
@@ -137,6 +141,8 @@ static char *_get_host(char *path, struct cntrl_device *cntrl)
 		result = scsi_get_host_path(path, cntrl->sysfs_path);
 	else if (cntrl->cntrl_type == LED_CNTRL_TYPE_AHCI)
 		result = ahci_get_port_path(path);
+	else if (cntrl->cntrl_type == LED_CNTRL_TYPE_KERNEL_NPEM)
+		result = kernel_npem_get_path(cntrl->sysfs_path);
 	else if (cntrl->cntrl_type == LED_CNTRL_TYPE_DELLSSD)
 		result = dellssd_get_path(cntrl->sysfs_path);
 	else if (cntrl->cntrl_type == LED_CNTRL_TYPE_VMD)
