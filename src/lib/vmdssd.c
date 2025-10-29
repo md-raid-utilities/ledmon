@@ -132,7 +132,7 @@ enum led_ibpi_pattern vmdssd_get_attention(struct pci_slot *slot)
 
 status_t vmdssd_write_attention_buf(struct pci_slot *slot, enum led_ibpi_pattern ibpi)
 {
-	char attention_path[PATH_MAX];
+	char attention_path[PATH_MAX + strlen("/attention")];
 	char buf[WRITE_BUFFER_SIZE];
 	const struct ibpi2value *ibpi2val;
 
