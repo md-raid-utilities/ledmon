@@ -51,7 +51,7 @@ static const struct ibpi2value ibpi2sgpio[] = {
 status_t ahci_sgpio_write(struct block_device *device, enum led_ibpi_pattern ibpi)
 {
 	char temp[WRITE_BUFFER_SIZE];
-	char path[PATH_MAX];
+	char path[PATH_MAX + strlen("/em_message")];
 	char *sysfs_path = device->cntrl_path;
 	const struct timespec waittime = {
 		.tv_sec = 0,
