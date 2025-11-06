@@ -413,8 +413,7 @@ static void _scan_slots(struct led_ctx *ctx)
 			slot = npem_slot_property_init(cntrl_device);
 			if (slot)
 				list_append_ctx(&ctx->sys.slots_list, slot, ctx);
-		}
-		if (cntrl_device->cntrl_type == LED_CNTRL_TYPE_KERNEL_NPEM) {
+		} else if (cntrl_device->cntrl_type == LED_CNTRL_TYPE_KERNEL_NPEM) {
 			slot = kernel_npem_slot_property_init(cntrl_device);
 			if (slot)
 				list_append_ctx(&ctx->sys.slots_list, slot, ctx);

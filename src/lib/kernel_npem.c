@@ -105,9 +105,8 @@ static u32 kernel_npem_supported_mask(const char *sysfs_path)
 	char led_path[PATH_MAX];
 	int i;
 	struct stat sb;
-	u32 supported;
+	u32 supported = 0;
 
-	supported = 0;
 	for (i = 0; i < ARRAY_SIZE(kernel_npem_leds); i++) {
 		make_led_path(led_path, sysfs_path, kernel_npem_leds[i].sysfs_led_name);
 		if (!stat(led_path, &sb))

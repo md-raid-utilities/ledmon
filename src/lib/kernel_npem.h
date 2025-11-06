@@ -43,7 +43,7 @@ enum led_ibpi_pattern kernel_npem_get_state(struct slot_property *slot);
 status_t kernel_npem_set_state(struct slot_property *slot, enum led_ibpi_pattern state);
 
 /**
- * @brief Initializes a slot_property for a specified npem controller.
+ * @brief Initializes a slot_property for a specified NPEM controller.
  *
  * @param[in]         npem_cntrl       Specified npem controller for this slot
  * @return struct slot_property* if successful, else NULL on allocation failure
