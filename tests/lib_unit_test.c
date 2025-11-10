@@ -144,7 +144,7 @@ START_TEST(test_list_controllers)
 			enum led_cntrl_type t = led_cntrl_type(ce);
 
 			devices_found = true;
-			ck_assert_msg(((int)t >= 1 && (int)t <= 6),  "invalid %u cntrl type", t);
+			ck_assert_msg(((int)t >= 1 && (int)t <= 7),  "invalid %u cntrl type", t);
 		}
 
 		led_cntrl_list_reset(cl);
@@ -152,7 +152,7 @@ START_TEST(test_list_controllers)
 			ck_assert_msg(led_cntrl_path(ce) != NULL, "led_cntrl_path returned NULL");
 			enum led_cntrl_type t = led_cntrl_type(ce);
 
-			ck_assert_msg(((int)t >= 1 && (int)t <= 6),  "invalid %u cntrl type", t);
+			ck_assert_msg(((int)t >= 1 && (int)t <= 7),  "invalid %u cntrl type", t);
 		}
 
 		led_cntrl_list_free(cl);
@@ -177,7 +177,7 @@ START_TEST(test_list_slots)
 			ck_assert_msg(led_slot_id(se) != NULL, "led_slot_id returned NULL");
 			enum led_cntrl_type t = led_slot_cntrl(se);
 
-			ck_assert_msg(((int)t >= 1 && (int)t <= 6),  "invalid %u cntrl type", t);
+			ck_assert_msg(((int)t >= 1 && (int)t <= 7),  "invalid %u cntrl type", t);
 			devices_found = true;
 			// TODO: Check led ibpi pattern and validate
 
@@ -189,7 +189,7 @@ START_TEST(test_list_slots)
 			ck_assert_msg(led_slot_id(se) != NULL, "led_slot_id returned NULL");
 			enum led_cntrl_type t = led_slot_cntrl(se);
 
-			ck_assert_msg(((int)t >= 1 && (int)t <= 6),  "invalid %u cntrl type", t);
+			ck_assert_msg(((int)t >= 1 && (int)t <= 7),  "invalid %u cntrl type", t);
 			// TODO: Check led ibpi pattern and validate
 
 			block_device_check(led_slot_device(se));
