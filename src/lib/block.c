@@ -164,6 +164,7 @@ static int is_host_id_supported(const struct block_device *bd)
 	case LED_CNTRL_TYPE_DELLSSD:
 	case LED_CNTRL_TYPE_VMD:
 	case LED_CNTRL_TYPE_NPEM:
+	case LED_CNTRL_TYPE_KERNEL_NPEM:
 		return 0;
 	default:
 		return 1;
@@ -194,7 +195,8 @@ struct cntrl_device *block_get_controller(const struct list *cntrl_list, char *p
 		if (cntrl) {
 			if (strncmp(cntrl->sysfs_path, path,
 				strnlen(cntrl->sysfs_path, PATH_MAX)) == 0) {
-				if (cntrl->cntrl_type == LED_CNTRL_TYPE_NPEM)
+				if ((cntrl->cntrl_type == LED_CNTRL_TYPE_NPEM) ||
+				    (cntrl->cntrl_type == LED_CNTRL_TYPE_KERNEL_NPEM))
 					return cntrl;
 				non_npem_cntrl = cntrl;
 			}
