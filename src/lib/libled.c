@@ -230,7 +230,8 @@ led_status_t led_slot_set(struct led_ctx *ctx, struct led_slot_list_entry *se,
 bool led_controller_slot_support(enum led_cntrl_type cntrl)
 {
 	return (cntrl == LED_CNTRL_TYPE_NPEM || cntrl == LED_CNTRL_TYPE_SCSI ||
-		cntrl == LED_CNTRL_TYPE_VMD);
+		cntrl == LED_CNTRL_TYPE_VMD) ||
+		cntrl == LED_CNTRL_TYPE_KERNEL_NPEM;
 }
 
 struct led_slot_list_entry *led_slot_next(struct led_slot_list *sl)
@@ -311,6 +312,7 @@ static const char * const ctrl_type_str[] = {
 	[LED_CNTRL_TYPE_AHCI]    = "AHCI",
 	[LED_CNTRL_TYPE_NPEM]    = "NPEM",
 	[LED_CNTRL_TYPE_AMD]     = "AMD",
+	[LED_CNTRL_TYPE_KERNEL_NPEM]     = "Kernel NPEM",
 };
 
 enum led_cntrl_type led_string_to_cntrl_type(const char *cntrl_str)
