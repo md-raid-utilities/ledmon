@@ -13,7 +13,7 @@ jobs:
         # gcc-versions are used to test up to 5 years old
         gcc-version: [9, 10, 11, 12, 13, 14]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: 'Add ubuntu repositories'
         run: .github/configure_apt.sh
       - name: 'Install building dependencies'
@@ -48,7 +48,7 @@ jobs:
     name: Compilation test with clang
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - name: 'Add ubuntu repositories'
       run: .github/configure_apt.sh
     - name: 'Install building dependencies'
@@ -67,7 +67,7 @@ jobs:
         python-version: ["3.9"]
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: 'Add ubuntu repositories'
         run: .github/configure_apt.sh
       - name: 'Install building dependencies'
