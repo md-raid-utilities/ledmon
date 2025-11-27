@@ -2,6 +2,7 @@
 // Copyright (C) 2022 Intel Corporation.
 
 /* System headers */
+#include <libgen.h>
 #include <stdio.h>
 #include <string.h>
 #include <pci/pci.h>

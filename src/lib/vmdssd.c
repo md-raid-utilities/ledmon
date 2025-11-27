@@ -3,6 +3,7 @@
 
 /* System headers */
 #include <errno.h>
+#include <libgen.h>
 #include <limits.h>
 #include <stdint.h>
 #include <stdio.h>

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // Copyright (C) 2023 Intel Corporation.
 
+#include <libgen.h>
 #include <string.h>
 #include "config.h"
 
