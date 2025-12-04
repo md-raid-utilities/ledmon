@@ -70,4 +70,13 @@ led_status_t device_exclude_pattern_add(struct led_ctx *ctx, const char *path);
  */
 void lib_log(struct led_ctx *ctx, enum led_log_level_enum loglevel, const char *buf, ...)
 				__attribute__ ((format (printf, 3, 4)));
+
+/*
+ * Ensure GNU basename behavior on GLIBC less systems.
+ */
+#ifndef __GLIBC__
+#define basename(path) \
+	(strrchr((path), '/') ? strrchr((path), '/') + 1 : (path))
+#endif
+
 #endif
