@@ -64,13 +64,18 @@ static char *get_slot_from_syspath(const char *path)
 char *vmdssd_get_domain(const char *path)
 {
 	char domain_path[PATH_MAX], real_domain_path[PATH_MAX];
+	char *tok;
 
 	snprintf(domain_path, PATH_MAX, "%s/%s/domain",
 		 SYSFS_VMD, basename(path));
 	if (realpath(domain_path, real_domain_path) == NULL)
 		return NULL;
 
-	return strtok(basename(real_domain_path), ":");
+	tok = strtok(basename(real_domain_path), ":");
+	if (!tok)
+		return NULL;
+
+	return strdup(tok);
 }
 
 bool vmdssd_check_slot_module(struct led_ctx *ctx, const char *slot_path)

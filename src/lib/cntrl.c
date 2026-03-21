@@ -424,9 +424,11 @@ struct cntrl_device *cntrl_device_init(const char *path, struct led_ctx *ctx)
 				if (type == LED_CNTRL_TYPE_VMD) {
 					char *domain = vmdssd_get_domain(path);
 
-					if (domain != NULL)
+					if (domain != NULL) {
 						snprintf(device->domain, PATH_MAX,
 							 "%s", domain);
+						free(domain);
+					}
 				}
 				device->cntrl_type = type;
 				strncpy(device->sysfs_path, path, PATH_MAX - 1);
