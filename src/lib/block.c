@@ -292,7 +292,7 @@ struct block_device *block_device_init(const struct list *cntrl_list, const char
 	if (cntrl->cntrl_type == LED_CNTRL_TYPE_VMD &&
 			!vmdssd_find_pci_slot(cntrl->ctx, link))
 		goto error;
-	host = _get_host(link, cntrl);
+	host = _get_host(link, cntrl);  //host is on the heap!
 	if (host == NULL)
 		goto error;
 	host_name = get_path_hostN(link);
@@ -340,6 +340,7 @@ struct block_device *block_device_init(const struct list *cntrl_list, const char
 		}
 	}
 
+	free(host);
 	return device;
 error:
 	free(host);
