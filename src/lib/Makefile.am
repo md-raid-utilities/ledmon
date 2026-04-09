@@ -8,12 +8,12 @@ SUBDIRS = include
 LIB_SRCS         = ahci.c block.c cntrl.c enclosure.c utils.c list.c \
                    raid.c scsi.c tail.c sysfs.c smp.c dellssd.c \
                    pci_slot.c vmdssd.c amd.c amd_sgpio.c amd_ipmi.c\
-                   ipmi.c npem.c ses.c slot.c \
+                   ipmi.c npem.c ses.c slot.c kernel_npem.c\
                    ahci.h amd_sgpio.h block.h cntrl.h dellssd.h utils.h \
                    enclosure.h list.h pci_slot.h raid.h scsi.h \
                    ses.h tail.h smp.h status.h sysfs.h \
                    vmdssd.h ipmi.h amd.h amd_ipmi.h npem.h libled_internal.c \
-		   slot.h libled_private.h libled_internal.h
+		   kernel_npem.h slot.h libled_private.h libled_internal.h
 
 # Make a convenience library, to be used for led tools and the shared library
 noinst_LTLIBRARIES = libledinternal.la
