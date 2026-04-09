@@ -207,12 +207,27 @@ int block_compare(const struct block_device *bd_old,
 		  const struct block_device *bd_new);
 
 /**
+ * @brief Checks whether a sysfs path contains a sub-path.
+ *
+ * The match must start at a path component, so a PCI slot address such as
+ * "0000:01:00" does not match inside "10000:01:00.0" (a VMD domain). Unless
+ * sub_path_to_end is set, the character after the match is required to be one
+ * of the following ('\n', '\0', '/'), otherwise it is excluded.
+ *
+ * @param[in]        path                Sysfs path to search.
+ * @param[in]        sub_path            Sub path.
+ * @param[in]        sub_path_to_end     True if sub_path is complete path.
+ *
+ * @return true if path contains sub_path, otherwise false.
+ */
+bool block_path_has_subpath(const char *path, const char *sub_path, bool sub_path_to_end);
+
+/**
  * @brief Finds block device which name contains sub-path.
  *
  * This function scans block devices and checks their sysfs path
  * to find any which contains PCI address specified for device in path.
- * The character after the sub_path match is required to be one of the
- * following ('\n', '\0', '/'), otherwise it is excluded.
+ * See block_path_has_subpath() for the matching rules.
  *
  * @param[in]        ctx                 Library context.
  * @param[in]        sub_path            Sub path.
