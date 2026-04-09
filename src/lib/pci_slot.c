@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include "config.h"
 #include "led/libled.h"
@@ -71,6 +72,12 @@ struct slot_property *pci_slot_property_init(struct pci_slot *pci_slot)
 
 	result->bl_device = get_block_device_from_sysfs_path(pci_slot->ctx,
 							     pci_slot->address, true);
+	if (result->bl_device) {
+		struct stat st;
+
+		if (stat(result->bl_device->devnode, &st) != 0)
+			result->bl_device = NULL;
+	}
 	result->slot_spec.pci = pci_slot;
 	snprintf(result->slot_id, PATH_MAX, "%s", pci_slot->sysfs_path);
 	result->c = &pci_slot_common;
