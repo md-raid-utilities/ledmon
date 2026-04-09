@@ -670,6 +670,14 @@ static void _add_block(struct block_device *block)
 			} else {
 				temp->ibpi = block->ibpi;
 			}
+		} else if (temp->ibpi == LED_IBPI_PATTERN_FAILED_DRIVE &&
+			   !temp->raid_dev) {
+			/*
+			 * Non-RAID device reappeared in sysfs scan.
+			 * Allow recovery from FAILED_DRIVE so the LED
+			 * is cleared after a hot-swap cycle.
+			 */
+			temp->ibpi = LED_IBPI_PATTERN_ADDED;
 		} else if (!(temp->ibpi == LED_IBPI_PATTERN_FAILED_DRIVE &&
 			block->ibpi == LED_IBPI_PATTERN_HOTSPARE) ||
 			(temp->ibpi == LED_IBPI_PATTERN_FAILED_DRIVE &&
