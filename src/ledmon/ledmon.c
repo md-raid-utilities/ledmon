@@ -656,6 +656,8 @@ static void _add_block(struct block_device *block)
 		bool was_raid_member;
 
 		temp->timestamp = block->timestamp;
+		/* Kernel names are reused; keep the /dev node udev matching relies on current. */
+		str_cpy(temp->devnode, block->devnode, PATH_MAX);
 		if (temp->ibpi == LED_IBPI_PATTERN_ADDED) {
 			temp->ibpi = LED_IBPI_PATTERN_ONESHOT_NORMAL;
 		} else if (temp->ibpi == LED_IBPI_PATTERN_ONESHOT_NORMAL) {

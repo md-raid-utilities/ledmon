@@ -381,6 +381,7 @@ struct block_device *block_device_duplicate(struct block_device *block)
 		if (result) {
 			str_cpy(result->sysfs_path, block->sysfs_path, PATH_MAX);
 			str_cpy(result->cntrl_path, block->cntrl_path, PATH_MAX);
+			str_cpy(result->devnode, block->devnode, PATH_MAX);
 			if (block->ibpi != LED_IBPI_PATTERN_UNKNOWN)
 				result->ibpi = block->ibpi;
 			else
