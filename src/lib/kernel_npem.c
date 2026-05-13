@@ -152,7 +152,7 @@ status_t kernel_npem_set_slot(struct led_ctx *ctx, const char *sysfs_path,
 
 	if (ibpi2val->ibpi == LED_IBPI_PATTERN_UNKNOWN) {
 		lib_log(ctx, LED_LOG_LEVEL_INFO,
-			"KERNEL_NPEM: Controller doesn't support %s pattern\n", ibpi2str(state));
+			"NPEM: Controller doesn't support %s pattern\n", ibpi2str(state));
 		return STATUS_INVALID_STATE;
 	}
 
@@ -166,7 +166,7 @@ status_t kernel_npem_set_slot(struct led_ctx *ctx, const char *sysfs_path,
 		 */
 		if (requested != PCI_NPEM_OK_CAP) {
 			lib_log(ctx, LED_LOG_LEVEL_INFO,
-				"KERNEL_NPEM: Controller %s doesn't support %s pattern\n",
+				"NPEM: Controller %s doesn't support %s pattern\n",
 				sysfs_path, ibpi2str(state));
 			return STATUS_INVALID_STATE;
 		}
@@ -183,7 +183,7 @@ status_t kernel_npem_set_state(struct slot_property *slot, enum led_ibpi_pattern
 }
 
 const struct slot_property_common kernel_npem_slot_common = {
-	.cntrl_type = LED_CNTRL_TYPE_KERNEL_NPEM,
+	.cntrl_type = LED_CNTRL_TYPE_NPEM,
 	.get_state_fn = kernel_npem_get_state,
 	.set_slot_fn = kernel_npem_set_state,
 };

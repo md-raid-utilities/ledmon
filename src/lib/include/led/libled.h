@@ -36,7 +36,6 @@ enum led_cntrl_type {
 	LED_CNTRL_TYPE_AHCI = 4,
 	LED_CNTRL_TYPE_NPEM = 5,
 	LED_CNTRL_TYPE_AMD = 6,
-	LED_CNTRL_TYPE_KERNEL_NPEM = 7,
 };
 
 /**
@@ -271,6 +270,16 @@ void LED_SYM_PUBLIC led_log_fd_set(struct led_ctx *ctx, int log_fd);
  *  - You must set a valid open file descriptor before any log messages will be written.
  */
 void LED_SYM_PUBLIC led_log_level_set(struct led_ctx *ctx, enum led_log_level_enum level);
+
+/**
+ * @brief Set use of userspace NPEM controller (instead of kernel NPEM controller).
+ *
+ * @param[in]	ctx	Library context
+ *
+ * Notes:
+ *  - The kernel NPEM controller will be used unless this is called.
+ */
+void LED_SYM_PUBLIC use_userspace_npem_controller(struct led_ctx *ctx);
 
 /**
  * @brief Instructs the library to scan system hardware for block devices with LED support.

@@ -66,6 +66,11 @@ void led_log_level_set(struct led_ctx *ctx, enum led_log_level_enum level)
 	ctx->log_lvl = level;
 }
 
+void use_userspace_npem_controller(struct led_ctx *ctx)
+{
+	ctx->config.userspace_npem = 1;
+}
+
 led_status_t led_scan(struct led_ctx *ctx)
 {
 	if (!ctx)
@@ -230,8 +235,7 @@ led_status_t led_slot_set(struct led_ctx *ctx, struct led_slot_list_entry *se,
 bool led_controller_slot_support(enum led_cntrl_type cntrl)
 {
 	return (cntrl == LED_CNTRL_TYPE_NPEM || cntrl == LED_CNTRL_TYPE_SCSI ||
-		cntrl == LED_CNTRL_TYPE_VMD) ||
-		cntrl == LED_CNTRL_TYPE_KERNEL_NPEM;
+		cntrl == LED_CNTRL_TYPE_VMD);
 }
 
 struct led_slot_list_entry *led_slot_next(struct led_slot_list *sl)
@@ -312,7 +316,6 @@ static const char * const ctrl_type_str[] = {
 	[LED_CNTRL_TYPE_AHCI]    = "AHCI",
 	[LED_CNTRL_TYPE_NPEM]    = "NPEM",
 	[LED_CNTRL_TYPE_AMD]     = "AMD",
-	[LED_CNTRL_TYPE_KERNEL_NPEM]     = "Kernel NPEM",
 };
 
 enum led_cntrl_type led_string_to_cntrl_type(const char *cntrl_str)

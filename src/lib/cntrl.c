@@ -177,13 +177,12 @@ static int _is_vmd_cntrl(const char *path)
 
 static int _is_npem_cntrl(const char *path, struct led_ctx *ctx)
 {
-	return is_npem_capable(path, ctx);
+	if (ctx->config.userspace_npem)
+		return is_npem_capable(path, ctx);
+	else
+		return is_kernel_npem_present(path);
 }
 
-static int _is_kernel_npem_cntrl(const char *path)
-{
-	return is_kernel_npem_present(path);
-}
 /**
  * @brief Determines the type of controller.
  *
@@ -205,8 +204,6 @@ static enum led_cntrl_type _get_type(const char *path, struct led_ctx *ctx)
 		type = LED_CNTRL_TYPE_NPEM;
 	} else if (_is_vmd_cntrl(path)) {
 		type = LED_CNTRL_TYPE_VMD;
-	} else if (_is_kernel_npem_cntrl(path)) {
-		type = LED_CNTRL_TYPE_KERNEL_NPEM;
 	} else if (_is_dellssd_cntrl(path, ctx)) {
 		type = LED_CNTRL_TYPE_DELLSSD;
 	} else if (_is_storage_controller(path)) {
@@ -407,7 +404,6 @@ struct cntrl_device *cntrl_device_init(const char *path, struct led_ctx *ctx)
 		case LED_CNTRL_TYPE_SCSI:
 		case LED_CNTRL_TYPE_VMD:
 		case LED_CNTRL_TYPE_NPEM:
-		case LED_CNTRL_TYPE_KERNEL_NPEM:
 			em_enabled = 1;
 			break;
 		case LED_CNTRL_TYPE_AHCI:

@@ -35,6 +35,7 @@ struct configuration {
 	int blink_on_init;
 	int rebuild_blink_on_all;
 	int raid_members_only;
+	int userspace_npem;
 
 	struct list allowlist;
 	struct list excludelist;
