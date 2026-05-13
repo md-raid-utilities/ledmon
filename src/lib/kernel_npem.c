@@ -130,6 +130,14 @@ enum led_ibpi_pattern kernel_npem_get_state(struct slot_property *slot)
 	ibpi2val =  get_by_bits(reg, ibpi_to_npem_capability,
 				ARRAY_SIZE(ibpi_to_npem_capability));
 
+       /*
+        * If LOCATE is the only pattern supported, report LOCATE_OFF instead
+        * of UNKNOWN.
+        */
+       if ((ibpi2val->ibpi == LED_IBPI_PATTERN_UNKNOWN) &&
+           (kernel_npem_supported_mask(path) == PCI_NPEM_LOCATE_CAP))
+                       return LED_IBPI_PATTERN_LOCATE_OFF;
+
 	return ibpi2val->ibpi;
 }
 
