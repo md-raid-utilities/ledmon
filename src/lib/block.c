@@ -19,6 +19,7 @@
 #include "block.h"
 #include "config.h"
 #include "dellssd.h"
+#include "kernel_npem.h"
 #include "libled_private.h"
 #include "npem.h"
 #include "pci_slot.h"
@@ -83,7 +84,10 @@ static void _set_send_message_fn(struct block_device *device)
 		device->send_message_fn = vmdssd_write;
 		break;
 	case LED_CNTRL_TYPE_NPEM:
-		device->send_message_fn = npem_write;
+		if (device->cntrl->ctx->config.userspace_npem)
+			device->send_message_fn = npem_write;
+		else
+			device->send_message_fn = kernel_npem_write;
 		break;
 	case LED_CNTRL_TYPE_AMD:
 		device->send_message_fn = amd_write;
@@ -137,12 +141,15 @@ static char *_get_host(char *path, struct cntrl_device *cntrl)
 		result = scsi_get_host_path(path, cntrl->sysfs_path);
 	else if (cntrl->cntrl_type == LED_CNTRL_TYPE_AHCI)
 		result = ahci_get_port_path(path);
-	else if (cntrl->cntrl_type == LED_CNTRL_TYPE_DELLSSD)
+	else if (cntrl->cntrl_type == LED_CNTRL_TYPE_NPEM) {
+		if (cntrl->ctx->config.userspace_npem)
+			result = npem_get_path(cntrl->sysfs_path);
+		else
+			result = kernel_npem_get_path(cntrl->sysfs_path);
+	} else if (cntrl->cntrl_type == LED_CNTRL_TYPE_DELLSSD)
 		result = dellssd_get_path(cntrl->sysfs_path);
 	else if (cntrl->cntrl_type == LED_CNTRL_TYPE_VMD)
 		result = vmdssd_get_path(cntrl->sysfs_path);
-	else if (cntrl->cntrl_type == LED_CNTRL_TYPE_NPEM)
-		result = npem_get_path(cntrl->sysfs_path);
 	else if (cntrl->cntrl_type == LED_CNTRL_TYPE_AMD)
 		result = amd_get_path(path, cntrl->sysfs_path, cntrl->ctx);
 

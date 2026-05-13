@@ -66,6 +66,11 @@ void led_log_level_set(struct led_ctx *ctx, enum led_log_level_enum level)
 	ctx->log_lvl = level;
 }
 
+void use_userspace_npem_controller(struct led_ctx *ctx)
+{
+	ctx->config.userspace_npem = 1;
+}
+
 led_status_t led_scan(struct led_ctx *ctx)
 {
 	if (!ctx)

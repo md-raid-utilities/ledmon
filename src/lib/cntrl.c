@@ -16,6 +16,7 @@
 #include "amd.h"
 #include "cntrl.h"
 #include "config.h"
+#include "kernel_npem.h"
 #include "list.h"
 #include "libled_private.h"
 #include "npem.h"
@@ -176,7 +177,10 @@ static int _is_vmd_cntrl(const char *path)
 
 static int _is_npem_cntrl(const char *path, struct led_ctx *ctx)
 {
-	return is_npem_capable(path, ctx);
+	if (ctx->config.userspace_npem)
+		return is_npem_capable(path, ctx);
+	else
+		return is_kernel_npem_present(path);
 }
 
 /**
