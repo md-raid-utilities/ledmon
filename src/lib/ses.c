@@ -457,21 +457,67 @@ int ses_send_diag(int fd, struct ses_pages *sp)
 			       sp->page2.len, 0, debug);
 }
 
-static void get_led_status(struct ses_pages *sp, int idx, enum led_ibpi_pattern *led_status)
+static void get_led_status(struct ses_pages *sp, element_type ele_type, int idx,
+						   enum led_ibpi_pattern *led_status)
 {
 	struct ses_slot_ctrl_elem *descriptors = (void *)(sp->page2.buf + 8);
 	struct ses_slot_ctrl_elem *desc_element = NULL;
+	unsigned char array_status = 0;
 	descriptors++;
 	desc_element = &descriptors[idx];
 
+	/*
+	 * SES supports multiple simultaneous status bits. Check in priority
+	 * order with standard IBPI patterns first, followed by SES-specific
+	 * patterns.
+	 * Byte 1 is only valid for Array Device Slot elements. Byte 1 bit
+	 * positions are the same in both pages for Array Device Slot elements.
+	 * Bytes 2-3 differ: RQST ACTIVE and RQST MISSING have no status-page
+	 * equivalents (SES-4 Tables 83/84).
+	 */
+
+	if (ele_type == SES_ARRAY_DEVICE_SLOT)
+		array_status = desc_element->array_slot_control;
+
 	*led_status = LED_IBPI_PATTERN_NORMAL;
 
+	/* Compound state: LOCATE + FAULT */
 	if ((desc_element->b2 & 0x02) && (desc_element->b3 & 0x60))
 		*led_status = LED_IBPI_PATTERN_LOCATE_AND_FAIL;
+	/* Standard IBPI patterns - highest priority first */
 	else if (desc_element->b2 & 0x02)
 		*led_status = LED_IBPI_PATTERN_LOCATE;
 	else if (desc_element->b3 & 0x60)
 		*led_status = LED_IBPI_PATTERN_FAILED_DRIVE;
+	else if (desc_element->common_control & 0x40)
+		*led_status = LED_IBPI_PATTERN_PFA;
+	else if (array_status & 0x04)
+		*led_status = LED_IBPI_PATTERN_FAILED_ARRAY;
+	else if (array_status & 0x02)
+		*led_status = LED_IBPI_PATTERN_REBUILD;
+	else if (array_status & 0x20)
+		*led_status = LED_IBPI_PATTERN_HOTSPARE;
+	else if (array_status & 0x08)
+		*led_status = LED_IBPI_PATTERN_DEGRADED;
+	/* SES-specific patterns */
+	else if (array_status & 0x10)
+		*led_status = LED_SES_REQ_CONS_CHECK;
+	else if (array_status & 0x01)
+		*led_status = LED_SES_REQ_ABORT;
+	else if (array_status & 0x40)
+		*led_status = LED_SES_REQ_RSVD_DEV;
+	else if (desc_element->b2 & 0x40)
+		*led_status = LED_SES_REQ_DNR;
+	else if (desc_element->b2 & 0x08)
+		*led_status = LED_SES_REQ_INS;
+	else if (desc_element->b2 & 0x04)
+		*led_status = LED_SES_REQ_RM;
+	else if (desc_element->b3 & 0x10)
+		*led_status = LED_SES_REQ_DEV_OFF;
+	else if (desc_element->b3 & 0x08)
+		*led_status = LED_SES_REQ_EN_BA;
+	else if (desc_element->b3 & 0x04)
+		*led_status = LED_SES_REQ_EN_BB;
 }
 
 int ses_get_slots(struct ses_pages *sp, struct ses_slot **out_slots, int *out_slots_count)
@@ -519,7 +565,8 @@ int ses_get_slots(struct ses_pages *sp, struct ses_slot **out_slots, int *out_sl
 					((uint64_t)addr_p[19]);
 
 				slots[j].index = ap[0] & 0x10 ? ap[3] : j;
-				get_led_status(sp, slots[j].index, &slots[j].ibpi_status);
+				get_led_status(sp, t->element_type, slots[j].index,
+							   &slots[j].ibpi_status);
 			}
 
 			// Our expectation is that the caller is passing us NULL or a valid chunk of
