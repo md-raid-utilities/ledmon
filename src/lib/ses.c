@@ -461,6 +461,7 @@ static void get_led_status(struct ses_pages *sp, int idx, enum led_ibpi_pattern 
 {
 	struct ses_slot_ctrl_elem *descriptors = (void *)(sp->page2.buf + 8);
 	struct ses_slot_ctrl_elem *desc_element = NULL;
+	element_type ele_type = sp->page1_types[0].element_type;
 	descriptors++;
 	desc_element = &descriptors[idx];
 
@@ -472,6 +473,43 @@ static void get_led_status(struct ses_pages *sp, int idx, enum led_ibpi_pattern 
 		*led_status = LED_IBPI_PATTERN_LOCATE;
 	else if (desc_element->b3 & 0x60)
 		*led_status = LED_IBPI_PATTERN_FAILED_DRIVE;
+	else if (desc_element->common_control & 0x40)
+		*led_status = LED_IBPI_PATTERN_PFA;
+
+	// Byte 1 is only valid for Array Device Slot elements
+	if ((*led_status == LED_IBPI_PATTERN_NORMAL) && (ele_type == SES_ARRAY_DEVICE_SLOT))
+	{
+		if (desc_element->array_slot_control & 0x04)
+			*led_status = LED_IBPI_PATTERN_FAILED_ARRAY;
+		else if (desc_element->array_slot_control & 0x02)
+			*led_status = LED_IBPI_PATTERN_REBUILD;
+		else if (desc_element->array_slot_control & 0x20)
+			*led_status = LED_IBPI_PATTERN_HOTSPARE;
+		else if (desc_element->array_slot_control & 0x08)
+			*led_status = LED_IBPI_PATTERN_DEGRADED;
+		else if (desc_element->array_slot_control & 0x10)
+			*led_status = LED_SES_REQ_CONS_CHECK;
+		else if (desc_element->array_slot_control & 0x01)
+			*led_status = LED_SES_REQ_ABORT;
+		else if (desc_element->array_slot_control & 0x40)
+			*led_status = LED_SES_REQ_RSVD_DEV;
+	}
+
+	if (*led_status == LED_IBPI_PATTERN_NORMAL)
+	{
+		if (desc_element->b2 & 0x40)
+			*led_status = LED_SES_REQ_DNR;
+		else if (desc_element->b2 & 0x08)
+			*led_status = LED_SES_REQ_INS;
+		else if (desc_element->b2 & 0x04)
+			*led_status = LED_SES_REQ_RM;
+		else if (desc_element->b3 & 0x10)
+			*led_status = LED_SES_REQ_DEV_OFF;
+		else if (desc_element->b3 & 0x08)
+			*led_status = LED_SES_REQ_EN_BA;
+		else if (desc_element->b3 & 0x04)
+			*led_status = LED_SES_REQ_EN_BB;
+	}
 }
 
 int ses_get_slots(struct ses_pages *sp, struct ses_slot **out_slots, int *out_slots_count)
