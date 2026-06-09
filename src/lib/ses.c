@@ -520,8 +520,8 @@ int ses_get_slots(struct ses_pages *sp, struct ses_slot **out_slots, int *out_sl
 
 				slots[j].index = ap[0] & 0x10 ? ap[3] : j;
 
-				// If EIIOE=1, ELEMENT INDEX includes overall elements, otherwise not.
-				// As (Array) Device Slot elements are always first in the list, there
+				// If EIIOE=1, ELEMENT INDEX includes overall elements.
+				// As (Array) Device Slot elements are always listed first, there
 				// will be exactly one overall element that needs to be ignored.
 				if ((ap[0] & 0x10) && ((ap[2] & 0x3) == 0x01))
 					slots[j].index--;
