@@ -712,12 +712,18 @@ static void _add_block(struct block_device *block)
 		 *   catches the OOM path in _handle_fail_state where
 		 *   raid_device_duplicate() returns NULL and the function returns
 		 *   early without clearing block->raid_dev.
+		 * - !blink_persistent_fail_on_readd: recovery is opt-in. By default
+		 *   the failure indication persists when a drive reappears in the
+		 *   scan without a udev add event, so operators can still see that
+		 *   a standalone drive misbehaved. A udev add event (hot-plug)
+		 *   clears it regardless, via ADDED -> ONESHOT_NORMAL above.
 		 */
 		if (ibpi == LED_IBPI_PATTERN_FAILED_DRIVE &&
 		    block->ibpi == LED_IBPI_PATTERN_UNKNOWN &&
 		    temp->ibpi == LED_IBPI_PATTERN_UNKNOWN &&
 		    !was_raid_member &&
-		    !block->raid_dev)
+		    !block->raid_dev &&
+		    !conf.blink_persistent_fail_on_readd)
 			temp->ibpi = LED_IBPI_PATTERN_ONESHOT_NORMAL;
 
 		if (ibpi != temp->ibpi && ibpi <= LED_IBPI_PATTERN_REMOVED)
@@ -932,6 +938,7 @@ static ledmon_status_code_t _init_ledmon_conf(void)
 	conf.blink_on_migration = 1;
 	conf.rebuild_blink_on_all = 0;
 	conf.raid_members_only = 0;
+	conf.blink_persistent_fail_on_readd = 1;
 	conf.scan_interval = LEDMON_DEF_SLEEP_INTERVAL;
 	return rc;
 }
