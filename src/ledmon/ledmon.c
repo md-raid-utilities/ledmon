@@ -671,12 +671,8 @@ static void _add_block(struct block_device *block)
 				temp->ibpi = block->ibpi;
 			}
 		} else if (temp->ibpi == LED_IBPI_PATTERN_FAILED_DRIVE &&
-			   !temp->raid_dev) {
-			/*
-			 * Non-RAID device reappeared in sysfs scan.
-			 * Allow recovery from FAILED_DRIVE so the LED
-			 * is cleared after a hot-swap cycle.
-			 */
+			   !temp->raid_dev &&
+			   !conf.blink_persistent_fail_on_readd) {
 			temp->ibpi = LED_IBPI_PATTERN_ADDED;
 		} else if (!(temp->ibpi == LED_IBPI_PATTERN_FAILED_DRIVE &&
 			block->ibpi == LED_IBPI_PATTERN_HOTSPARE) ||
@@ -892,6 +888,7 @@ static ledmon_status_code_t _init_ledmon_conf(void)
 	conf.blink_on_migration = 1;
 	conf.rebuild_blink_on_all = 0;
 	conf.raid_members_only = 0;
+	conf.blink_persistent_fail_on_readd = 1;
 	conf.scan_interval = LEDMON_DEF_SLEEP_INTERVAL;
 	return rc;
 }
