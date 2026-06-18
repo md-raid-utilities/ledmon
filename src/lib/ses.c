@@ -520,11 +520,16 @@ int ses_get_slots(struct ses_pages *sp, struct ses_slot **out_slots, int *out_sl
 
 				slots[j].index = ap[0] & 0x10 ? ap[3] : j;
 
-				// If EIIOE=1, ELEMENT INDEX includes overall elements.
-				// As (Array) Device Slot elements are always listed first, there
-				// will be exactly one overall element that needs to be ignored.
+				/*
+				 * ses_slot.index excludes overall elements.
+				 * If EIIOE=1, ELEMENT INDEX includes overall
+				 * elements. For all other values of EIIOE,
+				 * ELEMENT INDEX excludes overall elements.
+				 * There will be one overall element per
+				 * element type (including the current one).
+				 */
 				if ((ap[0] & 0x10) && ((ap[2] & 0x3) == 0x01))
-					slots[j].index--;
+					slots[j].index -= (i+1);
 
 				get_led_status(sp, slots[j].index, &slots[j].ibpi_status);
 			}
