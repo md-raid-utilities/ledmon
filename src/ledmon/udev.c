@@ -27,24 +27,40 @@ static struct udev_monitor *udev_monitor;
 
 static int _compare(const struct block_device *bd, const char *syspath, struct led_ctx *ctx)
 {
+	struct block_device *bd_new;
+	const char *udev_name;
+	const char *dev_name;
+	int ret;
+
 	if (!bd || !syspath)
 		return 0;
 
-	if (strcmp(bd->sysfs_path, syspath) == 0) {
+	if (strcmp(bd->sysfs_path, syspath) == 0)
 		return 1;
-	} else {
-		struct block_device *bd_new;
-		int ret;
 
-		bd_new = block_device_init(sysfs_get_cntrl_devices(ctx), syspath);
-		if (!bd_new)
-			return 0;
-
+	bd_new = block_device_init(sysfs_get_cntrl_devices(ctx), syspath);
+	if (bd_new) {
 		ret = block_compare(bd, bd_new);
 		block_device_fini(bd_new);
-
-		return ret;
+		if (ret)
+			return 1;
 	}
+
+	/*
+	 * NVMe udev events may arrive with a virtual nvme-subsystem path
+	 * that cannot be resolved to a PCI controller. Fall back to matching
+	 * by device name so that add/remove events are not silently dropped.
+	 */
+	if (bd->devnode[0] == '\0')
+		return 0;
+
+	dev_name = strrchr(bd->devnode, '/');
+	dev_name = dev_name ? dev_name + 1 : bd->devnode;
+
+	udev_name = strrchr(syspath, '/');
+	udev_name = udev_name ? udev_name + 1 : syspath;
+
+	return strcmp(dev_name, udev_name) == 0;
 }
 
 static int create_udev_monitor(void)
