@@ -100,7 +100,7 @@ static void print_page10(struct ses_pages *sp)
 		printf("\tDescriptor len (x-1): %d\n", ai[1] + 1);
 		eip = ai[0] & 0x10;
 		if (eip)
-			printf("\tElement Index: %d\n", ai[3]);
+			printf("\tElement Index: %d EIIOE: %d\n", ai[3], (ai[2] & 0x3));
 		len = ai[1] + 2;
 		if ((ai[0] & 0xf) == SCSI_PROTOCOL_SAS) {
 			if (eip)
@@ -519,6 +519,18 @@ int ses_get_slots(struct ses_pages *sp, struct ses_slot **out_slots, int *out_sl
 					((uint64_t)addr_p[19]);
 
 				slots[j].index = ap[0] & 0x10 ? ap[3] : j;
+
+				/*
+				 * ses_slot.index excludes overall elements.
+				 * If EIIOE=1, ELEMENT INDEX includes overall
+				 * elements. For all other values of EIIOE,
+				 * ELEMENT INDEX excludes overall elements.
+				 * There will be one overall element per
+				 * element type (including the current one).
+				 */
+				if ((ap[0] & 0x10) && ((ap[2] & 0x3) == 0x01))
+					slots[j].index -= (i+1);
+
 				get_led_status(sp, slots[j].index, &slots[j].ibpi_status);
 			}
 
