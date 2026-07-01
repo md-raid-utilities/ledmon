@@ -35,6 +35,7 @@ struct ledmon_conf {
 	int blink_on_init;
 	int rebuild_blink_on_all;
 	int raid_members_only;
+	int userspace_npem;
 
 	/* allowlist and excludelist of controllers for blinking */
 	struct list cntrls_allowlist;

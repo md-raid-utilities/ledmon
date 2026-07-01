@@ -71,6 +71,12 @@ is set to false - only the drive that the RAID is rebuilding to will be marked
 with appropriate LED pattern. If value is set to true all drives from RAID
 that is during rebuild will blink during this operation.
 
+B<USERSPACE_NPEM> - Use the userspace NPEM controller instead of the controller
+that talks to the kernel NPEM driver. This is useful for kernels that don't
+include the NPEM driver (CONFIG_PCI_NPEM), but it does not work with LED
+control _DSM, and does not work if userspace can't access PCI config space.
+The default value is false.
+
 B<ALLOWLIST> - Ledmon will limit changing LED state to controllers listed on
 allowlist. If any allowlist is set, only devices from the list will be scanned by
 ledmon. The controllers should be separated by a comma (B<,>) character. Only
