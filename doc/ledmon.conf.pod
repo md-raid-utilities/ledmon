@@ -63,6 +63,14 @@ Value also can be set by integer number - 0 means 'quiet' and 5 means 'all'.
 B<LOG_PATH> - Sets a path to local log file. If this option is specified the
 global log file F</var/log/ledmon.log> is not used.
 
+B<BLINK_PERSISTENT_FAIL_ON_READD> - Controls whether the failure LED remains
+on when a non-RAID drive is re-added after removal. If value is set to true,
+the failure indication persists until the drive is manually addressed. If value
+is set to false, non-RAID drives that reappear in the sysfs scan will
+automatically recover from the failure state and the LED will be cleared. RAID
+member drives always retain persistent failure regardless of this setting. The
+default value is true.
+
 B<RAID_MEMBERS_ONLY> - If flag is set to true ledmon will limit monitoring only
 to drives that are RAID members. The default value is false.
 

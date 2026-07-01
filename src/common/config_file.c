@@ -216,6 +216,11 @@ static int parse_next(FILE *fd, struct ledmon_conf *conf)
 		conf->raid_members_only = parse_bool(s);
 		if (conf->raid_members_only < 0)
 			return -1;
+	} else if (!strncmp(s, "BLINK_PERSISTENT_FAIL_ON_READD=", 31)) {
+		s += 31;
+		conf->blink_persistent_fail_on_readd = parse_bool(s);
+		if (conf->blink_persistent_fail_on_readd < 0)
+			return -1;
 	} else if (_parse_and_add_to_list(s, WHITELIST, WHITELIST_LEN, &conf->cntrls_allowlist)) {
 		/* Deprecated, provided for backwards compatibility */
 		return 0;
@@ -327,6 +332,9 @@ int ledmon_write_shared_conf(struct ledmon_conf *conf)
 		 "RAID_MEMBERS_ONLY=%d\n", conf->raid_members_only);
 	snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
 		 "REBUILD_BLINK_ON_ALL=%d\n", conf->rebuild_blink_on_all);
+	snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
+		 "BLINK_PERSISTENT_FAIL_ON_READD=%d\n",
+		 conf->blink_persistent_fail_on_readd);
 	snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
 		 "INTERVAL=%d\n", conf->scan_interval);
 	allowlist = conf_list_to_str(&conf->cntrls_allowlist);
