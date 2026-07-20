@@ -77,7 +77,7 @@ jobs:
       - name: 'Make'
         run: V=1 make -j$(nproc) CC=gcc-${{ matrix.gcc-version }} CXX=g++-${{ matrix.gcc-version }}
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install python dependencies
