@@ -75,6 +75,12 @@ enum {
   DELL_14G_MODULAR    = 0x31,
   DELL_15G_MONOLITHIC = 0x40,
   DELL_15G_MODULAR    = 0x41,
+  DELL_16G_MONOLITHIC = 0x50,
+  DELL_16G_MODULAR    = 0x51,
+  DELL_17G_MONOLITHIC = 0x60,
+  DELL_17G_MODULAR    = 0x61,
+  DELL_18G_MONOLITHIC = 0x70,
+  DELL_18G_MODULAR    = 0x71,
 
 };
 
@@ -83,6 +89,7 @@ int get_dell_server_type(struct led_ctx *ctx)
 	uint8_t data[4], rdata[20];
 	int rc, rlen;
 
+	printf("hello!\n");
 	/* Don't requery if we already know have ID */
 	if (ctx->dellssd_hw_gen)
 		return ctx->dellssd_hw_gen;
@@ -109,6 +116,12 @@ int get_dell_server_type(struct led_ctx *ctx)
 	case DELL_14G_MODULAR:
 	case DELL_15G_MONOLITHIC:
 	case DELL_15G_MODULAR:
+	case DELL_16G_MONOLITHIC:
+	case DELL_16G_MODULAR:
+	case DELL_17G_MONOLITHIC:
+	case DELL_17G_MODULAR:
+	case DELL_18G_MONOLITHIC:
+	case DELL_18G_MODULAR:
 
 		ctx->dellssd_hw_gen = rdata[10];
 		return ctx->dellssd_hw_gen;
@@ -153,6 +166,12 @@ static status_t ipmi_setled(struct led_ctx *ctx, int b, int d, int f, int state)
 	case DELL_14G_MODULAR:
 	case DELL_15G_MONOLITHIC:
 	case DELL_15G_MODULAR:
+	case DELL_16G_MONOLITHIC:
+	case DELL_16G_MODULAR:
+	case DELL_17G_MONOLITHIC:
+	case DELL_17G_MODULAR:
+	case DELL_18G_MONOLITHIC:
+	case DELL_18G_MODULAR:
 
 		data[1] = DELL_OEM_STORAGE_GETDRVMAP_14G;
 		break;
@@ -197,6 +216,12 @@ static status_t ipmi_setled(struct led_ctx *ctx, int b, int d, int f, int state)
 	case DELL_14G_MODULAR:
 	case DELL_15G_MONOLITHIC:
 	case DELL_15G_MODULAR:
+	case DELL_16G_MONOLITHIC:
+	case DELL_16G_MODULAR:
+	case DELL_17G_MONOLITHIC:
+	case DELL_17G_MODULAR:
+	case DELL_18G_MONOLITHIC:
+	case DELL_18G_MODULAR:
 
 		data[1] = DELL_OEM_STORAGE_SETDRVSTATUS_14G;
 		break;
