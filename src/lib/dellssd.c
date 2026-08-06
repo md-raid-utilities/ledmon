@@ -89,7 +89,6 @@ int get_dell_server_type(struct led_ctx *ctx)
 	uint8_t data[4], rdata[20];
 	int rc, rlen;
 
-	printf("hello!\n");
 	/* Don't requery if we already know have ID */
 	if (ctx->dellssd_hw_gen)
 		return ctx->dellssd_hw_gen;
