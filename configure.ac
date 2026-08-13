@@ -100,6 +100,11 @@ AC_CHECK_LIB([rt], [shm_unlink], [], [AC_MSG_ERROR(librt not found)])
 AC_CHECK_LIB([sgutils2], [sg_ll_send_diag], [], [AC_MSG_ERROR(libsgutils not found)])
 PKG_CHECK_MODULES([LIBUDEV], [libudev])
 PKG_CHECK_MODULES([LIBPCI], [libpci])
+PKG_CHECK_MODULES([UUID], [uuid], [], [
+    AC_CHECK_LIB([uuid], [uuid_parse], [], [
+        AC_MSG_ERROR([libuuid is required])
+    ])
+])
 
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h inttypes.h limits.h stdint.h stdlib.h string.h sys/file.h sys/ioctl.h sys/param.h sys/time.h syslog.h unistd.h])

@@ -18,7 +18,7 @@ LIB_SRCS         = ahci.c block.c cntrl.c enclosure.c utils.c list.c \
 # Make a convenience library, to be used for led tools and the shared library
 noinst_LTLIBRARIES = libledinternal.la
 libledinternal_la_SOURCES = libled.c $(LIB_SRCS)
-libledinternal_la_LIBADD = $(LIBPCI_LIBS) ../common/libcommon.la
+libledinternal_la_LIBADD = $(LIBPCI_LIBS) ../common/libcommon.la -luuid
 libledinternal_la_CFLAGS = -I$(top_srcdir)/src/lib/include -I$(top_srcdir)/src \
         -I$(top_srcdir)/config $(AM_CFLAGS) $(AM_LIB_CFLAGS) $(LIBPCI_CFLAGS)
 

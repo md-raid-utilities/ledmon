@@ -1144,6 +1144,7 @@ int main(int argc, char *argv[])
 		log_error("Error on led_scan %s", ledctl_strstatus(status));
 		return status;
 	}
+	lib_log(ctx, LED_LOG_LEVEL_ERROR, "LEDCTL main %d -Found VMD ", __LINE__);
 
 	if (status != LED_STATUS_SUCCESS)
 		exit(LED_STATUS_CMDLINE_ERROR);
