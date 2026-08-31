@@ -66,6 +66,12 @@ static const struct ibpi2value ibpi2ssd[] = {
 #define APP_GET_SYSTEM_INFO		    0x59
 #define DELL_GET_IDRAC_INFO		    0xDD
 
+/*
+ * The dellssd (IPMI) method of controlling LEDs is deprecated in
+ * current Dell systems, in favor of the _DSM which Dell systems
+ * support since 17G. The _DSM does not use this code, so future
+ * updates to add later Dell systems here should not be needed.
+ */
 enum {
   DELL_12G_MONOLITHIC = 0x10,
   DELL_12G_MODULAR    = 0x11,
