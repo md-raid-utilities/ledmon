@@ -27,7 +27,11 @@
 #include "utils.h"
 #include "amd.h"
 #include "amd_sgpio.h"
+#include "block.h"
+#include "cntrl.h"
+#include "list.h"
 #include "libled_private.h"
+#include "slot.h"
 
 #define HOST_CAP_EMS	(1 << 6)
 
@@ -601,13 +605,13 @@ static int _get_amd_sgpio_drive(const char *start_path,
 	return 0;
 }
 
+static int _amd_sgpio_set_drive(struct led_ctx *ctx, const char *em_buffer_path,
+				struct amd_drive *drive, enum led_ibpi_pattern ibpi);
+
 static int _set_ibpi(struct block_device *device, enum led_ibpi_pattern ibpi)
 {
 	int rc;
 	struct amd_drive drive;
-	struct transmit_register tx_reg;
-	struct cache_entry *cache;
-	struct cache_entry cache_dup;
 
 	memset(&drive, 0, sizeof(struct amd_drive));
 	drive.ctx = device->cntrl->ctx;
@@ -631,33 +635,199 @@ static int _set_ibpi(struct block_device *device, enum led_ibpi_pattern ibpi)
 	if (rc)
 		return rc;
 
-	cache = _get_cache(&drive);
+	return _amd_sgpio_set_drive(device->cntrl->ctx, device->cntrl_path, &drive, ibpi);
+}
+
+static int _amd_sgpio_set_drive(struct led_ctx *ctx, const char *em_buffer_path,
+				struct amd_drive *drive, enum led_ibpi_pattern ibpi)
+{
+	int rc;
+	struct transmit_register tx_reg;
+	struct cache_entry *cache;
+	struct cache_entry cache_dup;
+
+	cache = _get_cache(drive);
 	if (!cache)
 		return -EINVAL;
 
-	/* Save copy of cache entry */
 	memcpy(&cache_dup, cache, sizeof(cache_dup));
 
-	rc = _write_amd_register(device->cntrl_path, &drive);
+	rc = _write_amd_register(em_buffer_path, drive);
 	if (rc)
-		goto _set_ibpi_error;
+		goto error;
 
-	rc = _write_cfg_register(device->cntrl->ctx, device->cntrl_path, cache, ibpi);
+	rc = _write_cfg_register(ctx, em_buffer_path, cache, ibpi);
 	if (rc)
-		goto _set_ibpi_error;
+		goto error;
 
 	memset(&tx_reg, 0, sizeof(tx_reg));
-	_set_tx_drive_leds(&tx_reg, cache, drive.drive_bay, ibpi);
-	rc = _write_tx_register(device->cntrl->ctx, device->cntrl_path, &tx_reg);
+	_set_tx_drive_leds(&tx_reg, cache, drive->drive_bay, ibpi);
+	rc = _write_tx_register(ctx, em_buffer_path, &tx_reg);
 
-_set_ibpi_error:
-	if (rc) {
-		/* Restore saved cache entry */
+error:
+	if (rc)
 		memcpy(cache, &cache_dup, sizeof(*cache));
+
+	_put_cache(ctx);
+	return rc;
+}
+
+static status_t amd_sgpio_set_slot(struct slot_property *slot, enum led_ibpi_pattern ibpi)
+{
+	struct amd_sgpio_slot *amd_slot = &slot->slot_spec.amd_sgpio;
+	struct amd_drive drive = {
+		.ata_port = amd_slot->ata_port,
+		.port = amd_slot->port,
+		.drive_bay = amd_slot->drive_bay,
+		.initiator = amd_slot->initiator,
+		.ctx = amd_slot->ctx,
+	};
+
+	if ((ibpi < LED_IBPI_PATTERN_NORMAL) || (ibpi > LED_IBPI_PATTERN_LOCATE_OFF))
+		return STATUS_INVALID_STATE;
+
+	if ((ibpi == LED_IBPI_PATTERN_DEGRADED) ||
+	    (ibpi == LED_IBPI_PATTERN_FAILED_ARRAY))
+		return STATUS_INVALID_STATE;
+
+	if (_amd_sgpio_set_drive(amd_slot->ctx, amd_slot->em_buffer_path, &drive, ibpi))
+		return STATUS_FILE_WRITE_ERROR;
+	return STATUS_SUCCESS;
+}
+
+static bool drive_leds_equal(const struct drive_leds *a, const struct drive_leds *b)
+{
+	return a->error == b->error && a->locate == b->locate && a->activity == b->activity;
+}
+
+static enum led_ibpi_pattern amd_sgpio_get_slot_state(struct slot_property *slot)
+{
+	struct amd_sgpio_slot *amd_slot = &slot->slot_spec.amd_sgpio;
+	struct amd_drive drive = {
+		.ata_port = amd_slot->ata_port,
+		.port = amd_slot->port,
+		.drive_bay = amd_slot->drive_bay,
+		.initiator = amd_slot->initiator,
+		.ctx = amd_slot->ctx,
+	};
+	struct cache_entry *cache;
+	struct drive_leds *leds;
+	enum led_ibpi_pattern ibpi;
+
+	cache = _get_cache(&drive);
+	if (!cache)
+		return LED_IBPI_PATTERN_UNKNOWN;
+
+	leds = &cache->leds[amd_slot->drive_bay];
+
+	for (ibpi = LED_IBPI_PATTERN_NORMAL; ibpi <= LED_IBPI_PATTERN_LOCATE_OFF; ibpi++) {
+		if (ibpi == LED_IBPI_PATTERN_DEGRADED ||
+		    ibpi == LED_IBPI_PATTERN_FAILED_ARRAY)
+			continue;
+
+		if (drive_leds_equal(leds, &tx_leds_blink_gen_a[ibpi]) ||
+		    drive_leds_equal(leds, &tx_leds_blink_gen_b[ibpi])) {
+			_put_cache(amd_slot->ctx);
+			return ibpi == LED_IBPI_PATTERN_LOCATE_OFF ?
+			       LED_IBPI_PATTERN_NORMAL : ibpi;
+		}
 	}
 
-	_put_cache(device->cntrl->ctx);
-	return rc;
+	_put_cache(amd_slot->ctx);
+	return LED_IBPI_PATTERN_UNKNOWN;
+}
+
+static const struct slot_property_common amd_sgpio_slot_common = {
+	.cntrl_type = LED_CNTRL_TYPE_AMD,
+	.get_state_fn = amd_sgpio_get_slot_state,
+	.set_slot_fn = amd_sgpio_set_slot,
+};
+
+static struct slot_property *amd_sgpio_slot_property_init(struct cntrl_device *cntrl,
+							  const char *em_buffer_path)
+{
+	struct slot_property *slot;
+	struct amd_sgpio_slot *amd_slot;
+	struct amd_drive drive;
+	char ata_name[32];
+
+	slot = calloc(1, sizeof(*slot));
+	if (!slot)
+		return NULL;
+
+	amd_slot = &slot->slot_spec.amd_sgpio;
+	memset(&drive, 0, sizeof(drive));
+	drive.ctx = cntrl->ctx;
+	if (_get_amd_sgpio_drive(em_buffer_path, &drive))
+		goto error;
+
+	str_cpy(amd_slot->em_buffer_path, em_buffer_path, PATH_MAX);
+	amd_slot->ata_port = drive.ata_port;
+	amd_slot->port = drive.port;
+	amd_slot->drive_bay = drive.drive_bay;
+	amd_slot->initiator = drive.initiator;
+	amd_slot->ctx = cntrl->ctx;
+
+	snprintf(ata_name, sizeof(ata_name), "ata%d", amd_slot->ata_port);
+	slot->bl_device = get_block_device_from_sysfs_path(cntrl->ctx, ata_name, false);
+	slot->c = &amd_sgpio_slot_common;
+	snprintf(slot->slot_id, PATH_MAX, "ata%d-bay%d",
+		 amd_slot->ata_port, amd_slot->drive_bay);
+
+	return slot;
+
+error:
+	free(slot);
+	return NULL;
+}
+
+static void amd_sgpio_em_buffer_add(struct cntrl_device *cntrl, struct list *slots,
+				    const char *em_buffer_path)
+{
+	struct slot_property *slot = amd_sgpio_slot_property_init(cntrl, em_buffer_path);
+
+	if (slot)
+		list_append_ctx(slots, slot, cntrl->ctx);
+}
+
+static void amd_sgpio_scan_slots(struct cntrl_device *cntrl, struct list *slots,
+				 const char *path)
+{
+	struct list dir;
+	const char *dir_path;
+
+	if (scan_dir(path, &dir))
+		return;
+
+	list_for_each(&dir, dir_path) {
+		struct stat sbuf;
+		const char *name = strrchr(dir_path, '/');
+
+		if (!name)
+			continue;
+		name++;
+
+		if (strcmp(name, "em_buffer") == 0) {
+			amd_sgpio_em_buffer_add(cntrl, slots, dir_path);
+			continue;
+		}
+
+		if (lstat(dir_path, &sbuf) == -1)
+			continue;
+
+		if (S_ISDIR(sbuf.st_mode))
+			amd_sgpio_scan_slots(cntrl, slots, dir_path);
+	}
+
+	list_erase(&dir);
+}
+
+void amd_sgpio_slots_add(struct cntrl_device *cntrl, struct list *slots)
+{
+	if (amd_interface != AMD_INTF_SGPIO)
+		return;
+
+	amd_sgpio_scan_slots(cntrl, slots, cntrl->sysfs_path);
 }
 
 static int _amd_sgpio_init_one(const char *path, struct amd_drive *drive,

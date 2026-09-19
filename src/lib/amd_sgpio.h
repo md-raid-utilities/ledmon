@@ -9,6 +9,8 @@
 #include <stdint.h>
 
 #include "block.h"
+#include "cntrl.h"
+#include "list.h"
 #include "led/libled.h"
 
 typedef uint8_t drive_led_t;
@@ -29,6 +31,7 @@ struct cache_entry {
 int _amd_sgpio_em_enabled(const char *path, struct led_ctx *ctx);
 status_t _amd_sgpio_write(struct block_device *device, enum led_ibpi_pattern ibpi);
 char *_amd_sgpio_get_path(const char *cntrl_path, struct led_ctx *ctx);
+void amd_sgpio_slots_add(struct cntrl_device *cntrl, struct list *slots);
 
 void amd_sgpio_cache_free(struct led_ctx *ctx);
 

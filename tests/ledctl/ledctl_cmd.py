@@ -26,7 +26,7 @@ class Slot:
 
 class LedctlCmd:
 
-    slot_mgmt_ctrls = ["SCSI", "VMD", "NPEM"]
+    slot_mgmt_ctrls = ["SCSI", "VMD", "NPEM", "AMD"]
 
     # These base states should be supported by all controllers
     base_states = ["failure", "locate", "normal", "rebuild"]
