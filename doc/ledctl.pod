@@ -355,7 +355,7 @@ This section describes options necessary by various slot management modes.
 =item B<-n I<controller_type>> or B<--controller-type=I<controller_type>>
 
 Controller type chosen for the request. It aggregates multiple controllers of the same
-type. Supported types are: VMD, NPEM and SCSI.
+type. Supported types are: VMD, NPEM, SCSI and AMD.
 
 =item B<-d I<device>> or B<--device=I<device>>
 
