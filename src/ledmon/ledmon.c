@@ -679,6 +679,27 @@ static void _add_block(struct block_device *block)
 
 		_handle_fail_state(block, temp);
 
+		/*
+		 * If the drive was in FAILED_DRIVE and re-appeared with UNKNOWN,
+		 * map to ONESHOT_NORMAL to actively clear the amber LED.
+		 *
+		 * Guard conditions:
+		 * - temp->ibpi == UNKNOWN: _handle_fail_state left no active state,
+		 *   meaning the drive is not an active RAID volume member (which
+		 *   would have caused _handle_fail_state to restore FAILED_DRIVE or
+		 *   set HOTSPARE).
+		 * - !block->raid_dev: the current scan sees no RAID association,
+		 *   so the drive is standalone or its array is gone. This also
+		 *   catches the OOM path in _handle_fail_state where
+		 *   raid_device_duplicate() returns NULL and the function returns
+		 *   early without clearing block->raid_dev.
+		 */
+		if (ibpi == LED_IBPI_PATTERN_FAILED_DRIVE &&
+		    block->ibpi == LED_IBPI_PATTERN_UNKNOWN &&
+		    temp->ibpi == LED_IBPI_PATTERN_UNKNOWN &&
+		    !block->raid_dev)
+			temp->ibpi = LED_IBPI_PATTERN_ONESHOT_NORMAL;
+
 		if (ibpi != temp->ibpi && ibpi <= LED_IBPI_PATTERN_REMOVED)
 			log_info("CHANGE %s: from '%s' to '%s'", temp->sysfs_path, ibpi2str(ibpi),
 				 ibpi2str(temp->ibpi));
@@ -775,15 +796,12 @@ static void _send_msg(struct block_device *block)
 		}
 	}
 
-	/**
-	 * ibpi_prev is always updated regardless send_message_fn status. It works this way from
-	 * the beginning.
-	 */
-	block->ibpi_prev = block->ibpi;
-
-	if (status)
+	if (!status) {
+		block->ibpi_prev = block->ibpi;
+	} else {
 		log_error("Unable to set %s IBPI state on %s. Status: %d",
 			  ibpi2str(block->ibpi), block->sysfs_path, status);
+	}
 }
 
 static void _flush_msg(struct block_device *block)
