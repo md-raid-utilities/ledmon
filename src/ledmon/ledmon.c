@@ -796,15 +796,12 @@ static void _send_msg(struct block_device *block)
 		}
 	}
 
-	/**
-	 * ibpi_prev is always updated regardless send_message_fn status. It works this way from
-	 * the beginning.
-	 */
-	block->ibpi_prev = block->ibpi;
-
-	if (status)
+	if (!status) {
+		block->ibpi_prev = block->ibpi;
+	} else {
 		log_error("Unable to set %s IBPI state on %s. Status: %d",
 			  ibpi2str(block->ibpi), block->sysfs_path, status);
+	}
 }
 
 static void _flush_msg(struct block_device *block)
