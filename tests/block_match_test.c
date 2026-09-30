@@ -105,12 +105,32 @@ START_TEST(test_block_path_has_subpath)
 }
 END_TEST
 
+/*
+ * A device whose controller was hot-removed is left on the tracked list with a
+ * NULL cntrl by _revalidate_dev() until the scan reaps it, but _add_block()
+ * still runs block_compare() against it first. block_compare() must treat a
+ * missing controller as "no match" rather than dereferencing it (this crashed
+ * ledmon on a real NVMe PCIe hot-remove).
+ */
+START_TEST(test_block_compare_null_cntrl)
+{
+	struct cntrl_device cntrl = { 0 };
+	struct block_device present = { .cntrl = &cntrl };
+	struct block_device removed = { .cntrl = NULL };
+
+	ck_assert_int_eq(block_compare(&removed, &present), 0);
+	ck_assert_int_eq(block_compare(&present, &removed), 0);
+	ck_assert_int_eq(block_compare(&removed, &removed), 0);
+}
+END_TEST
+
 static Suite *block_match_suite(void)
 {
 	Suite *s = suite_create("block_match");
 	TCase *tc = tcase_create("block_path_has_subpath");
 
 	tcase_add_loop_test(tc, test_block_path_has_subpath, 0, (int)ARRAY_SIZE(cases));
+	tcase_add_test(tc, test_block_compare_null_cntrl);
 	suite_add_tcase(s, tc);
 	return s;
 }

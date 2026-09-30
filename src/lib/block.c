@@ -424,6 +424,17 @@ int block_compare(const struct block_device *bd_old,
 {
 	int i = 0;
 
+	/*
+	 * _revalidate_dev() leaves a tracked device on the list with a NULL
+	 * cntrl once its controller has gone away (e.g. an NVMe or VMD drive
+	 * that was hot-removed), until it is reaped at the end of the scan.
+	 * Such a device never matches a present one, and the per-controller
+	 * comparisons below would dereference the missing controller, so bail
+	 * out early. is_host_id_supported() already guards its own NULL access.
+	 */
+	if (!bd_old->cntrl || !bd_new->cntrl)
+		return 0;
+
 	if (is_host_id_supported(bd_old) && bd_old->host_id == -1) {
 		lib_log(bd_old->cntrl->ctx, LED_LOG_LEVEL_DEBUG,
 			"Device %s : No host_id!", strstr(bd_old->sysfs_path, "host"));
