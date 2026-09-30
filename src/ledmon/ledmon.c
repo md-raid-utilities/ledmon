@@ -659,7 +659,15 @@ static void _add_block(struct block_device *block)
 		if (temp->ibpi == LED_IBPI_PATTERN_ADDED) {
 			temp->ibpi = LED_IBPI_PATTERN_ONESHOT_NORMAL;
 		} else if (temp->ibpi == LED_IBPI_PATTERN_ONESHOT_NORMAL) {
-			temp->ibpi = LED_IBPI_PATTERN_UNKNOWN;
+			/*
+			 * ONESHOT_NORMAL is consumed only once the controller has
+			 * accepted it (ibpi_prev is not updated on a transient
+			 * failure), so a failed write is retried. A new state from
+			 * the scan ends it early and is applied on the next scan.
+			 */
+			if (temp->ibpi_prev == LED_IBPI_PATTERN_ONESHOT_NORMAL ||
+			    block->ibpi != LED_IBPI_PATTERN_UNKNOWN)
+				temp->ibpi = LED_IBPI_PATTERN_UNKNOWN;
 		} else if (temp->ibpi != LED_IBPI_PATTERN_FAILED_DRIVE) {
 			if (block->ibpi == LED_IBPI_PATTERN_UNKNOWN) {
 				if ((temp->ibpi != LED_IBPI_PATTERN_UNKNOWN) &&
@@ -806,12 +814,22 @@ static void _send_msg(struct block_device *block)
 		}
 	}
 
-	if (!status) {
-		block->ibpi_prev = block->ibpi;
-	} else {
-		log_error("Unable to set %s IBPI state on %s. Status: %d",
-			  ibpi2str(block->ibpi), block->sysfs_path, status);
+	if (status) {
+		/*
+		 * A transient failure (e.g. the PCI slot lookup racing with hotplug)
+		 * leaves ibpi_prev untouched so the write is retried on the next scan.
+		 * STATUS_INVALID_STATE means the controller does not support the
+		 * pattern, so retrying cannot help: report it once and treat it as
+		 * applied.
+		 */
+		if (status != STATUS_INVALID_STATE || block->ibpi != block->ibpi_prev)
+			log_error("Unable to set %s IBPI state on %s. Status: %d",
+				  ibpi2str(block->ibpi), block->sysfs_path, status);
+		if (status != STATUS_INVALID_STATE)
+			return;
 	}
+
+	block->ibpi_prev = block->ibpi;
 }
 
 static void _flush_msg(struct block_device *block)
