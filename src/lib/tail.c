@@ -14,6 +14,7 @@
 #endif
 
 #include "list.h"
+#include "sysfs.h"
 #include "tail.h"
 #include "utils.h"
 
@@ -74,6 +75,50 @@ static int _get_slot(const char *path, unsigned int *dest)
 }
 
 /**
+ * @brief Determine whether a tracked block device backs a RAID member.
+ *
+ * @param[in]  block    Block device tracked by ledmon.
+ * @param[in]  syspath  Canonicalized sysfs path of the block device backing
+ *                      the RAID member (the md .../dev-XXX/block symlink,
+ *                      resolved).
+ *
+ * Normally a member's backing device resolves to exactly the sysfs path that
+ * ledmon tracks, so a path comparison is sufficient. NVMe multipath members
+ * are the exception: they resolve to a virtual namespace-head path (e.g.
+ * /sys/devices/virtual/nvme-subsystem/nvme-subsysN/nvme2n1) while ledmon
+ * tracks the underlying per-controller device (nvme2c2n1) by its physical PCI
+ * path. Their sysfs paths differ, but both share the same /dev node, so fall
+ * back to matching on the device node. Without this fallback array-derived
+ * states (REBUILD, DEGRADED, in-array FAILURE) are never applied to multipath
+ * NVMe drives.
+ *
+ * @return true if @p block backs @p syspath, otherwise false.
+ */
+bool tail_block_matches(const struct block_device *block, const char *syspath)
+{
+	char devnode[PATH_MAX];
+	const char *name;
+	int ret;
+
+	if (strcmp(block->sysfs_path, syspath) == 0)
+		return true;
+
+	if (block->devnode[0] == '\0')
+		return false;
+
+	name = strrchr(syspath, '/');
+	name = name ? name + 1 : syspath;
+	if (name[0] == '\0')
+		return false;
+
+	ret = snprintf(devnode, sizeof(devnode), SYSTEM_DEV_DIR "/%s", name);
+	if (ret < 0 || ret >= (int)sizeof(devnode))
+		return false;
+
+	return strcmp(block->devnode, devnode) == 0;
+}
+
+/**
  */
 static struct block_device *_get_block(const char *path, struct list *block_list)
 {
@@ -99,7 +144,7 @@ static struct block_device *_get_block(const char *path, struct list *block_list
 	}
 
 	list_for_each(block_list, device) {
-		if (strcmp(device->sysfs_path, link) == 0)
+		if (tail_block_matches(device, link))
 			return device;
 	}
 	return NULL;

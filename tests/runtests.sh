@@ -17,9 +17,15 @@ if [ ! -e "./tests" ];then
     cd ..
 fi
 
+# Hardware-independent unit tests first, so they run even without test hardware
+echo "running block path matching unit test"
+./tests/block_match_test || exit 1
+
+echo "running RAID member matching unit test"
+./tests/tail_match_test || exit 1
+
 echo "exercising ledctl"
 $PYTEST tests --ledctl-binary=src/ledctl/ledctl --slot-filters="$LEDMONTEST_SLOT_FILTER" || exit 1
 
 echo "running library unit test"
 ./tests/lib_unit_test || exit 1
-

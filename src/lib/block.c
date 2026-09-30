@@ -257,20 +257,36 @@ static void block_set_devnode(struct block_device *device)
 		str_cpy(device->devnode, tmp, PATH_MAX);
 }
 
+bool block_path_has_subpath(const char *path, const char *sub_path, bool sub_path_to_end)
+{
+	size_t len = strnlen(sub_path, PATH_MAX);
+	const char *start_loc = path;
+
+	if (len == 0)
+		return false;
+
+	while ((start_loc = strstr(start_loc, sub_path))) {
+		char following = start_loc[len];
+		bool at_component = sub_path[0] == '/' || start_loc == path ||
+				    start_loc[-1] == '/';
+
+		if (at_component && (sub_path_to_end || following == '/' ||
+				     following == '\n' || following == '\0'))
+			return true;
+		start_loc++;
+	}
+
+	return false;
+}
+
 struct block_device *get_block_device_from_sysfs_path(struct led_ctx *ctx, char *sub_path,
 						      bool sub_path_to_end)
 {
 	struct block_device *device;
 
 	list_for_each(sysfs_get_block_devices(ctx), device) {
-			char *start_loc;
-			if ((start_loc = strstr(device->sysfs_path, sub_path))) {
-				char following = start_loc[strnlen(sub_path, PATH_MAX)];
-				if (following == '/' || following == '\n' || following == '\0')
-					return device;
-				if (sub_path_to_end)
-					return device;
-			}
+		if (block_path_has_subpath(device->sysfs_path, sub_path, sub_path_to_end))
+			return device;
 	}
 
 	return NULL;
@@ -381,6 +397,7 @@ struct block_device *block_device_duplicate(struct block_device *block)
 		if (result) {
 			str_cpy(result->sysfs_path, block->sysfs_path, PATH_MAX);
 			str_cpy(result->cntrl_path, block->cntrl_path, PATH_MAX);
+			str_cpy(result->devnode, block->devnode, PATH_MAX);
 			if (block->ibpi != LED_IBPI_PATTERN_UNKNOWN)
 				result->ibpi = block->ibpi;
 			else
@@ -406,6 +423,17 @@ int block_compare(const struct block_device *bd_old,
 		  const struct block_device *bd_new)
 {
 	int i = 0;
+
+	/*
+	 * _revalidate_dev() leaves a tracked device on the list with a NULL
+	 * cntrl once its controller has gone away (e.g. an NVMe or VMD drive
+	 * that was hot-removed), until it is reaped at the end of the scan.
+	 * Such a device never matches a present one, and the per-controller
+	 * comparisons below would dereference the missing controller, so bail
+	 * out early. is_host_id_supported() already guards its own NULL access.
+	 */
+	if (!bd_old->cntrl || !bd_new->cntrl)
+		return 0;
 
 	if (is_host_id_supported(bd_old) && bd_old->host_id == -1) {
 		lib_log(bd_old->cntrl->ctx, LED_LOG_LEVEL_DEBUG,

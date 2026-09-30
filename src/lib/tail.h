@@ -27,6 +27,15 @@ struct tail_device {
 };
 
 /**
+ * @brief Determine whether a tracked block device backs a RAID member.
+ *
+ * Matches on the sysfs path, falling back to the device node so that NVMe
+ * multipath members (whose namespace-head sysfs path differs from the tracked
+ * per-controller path) are still linked to their array.
+ */
+bool tail_block_matches(const struct block_device *block, const char *syspath);
+
+/**
  */
 struct tail_device *tail_device_init(const char *path, struct list *block_list);
 

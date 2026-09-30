@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <libudev.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,26 +26,114 @@ extern struct ledmon_conf conf;
 
 static struct udev_monitor *udev_monitor;
 
-static int _compare(const struct block_device *bd, const char *syspath, struct led_ctx *ctx)
+/* Parent of the NVMe multipath namespace-head block devices. */
+#define NVME_SUBSYS_VIRT_PATH "/sys/devices/virtual/nvme-subsystem/"
+
+/*
+ * Find the tracked device that a resolvable sysfs path refers to. Kernel names
+ * are reused, so this compares slot/controller identity rather than names.
+ */
+static struct block_device *_find_by_block(struct list *block_list, const char *path,
+					   struct led_ctx *ctx)
 {
-	if (!bd || !syspath)
-		return 0;
+	struct block_device *block = NULL;
+	struct block_device *bd_new;
 
-	if (strcmp(bd->sysfs_path, syspath) == 0) {
-		return 1;
-	} else {
-		struct block_device *bd_new;
-		int ret;
+	bd_new = block_device_init(sysfs_get_cntrl_devices(ctx), path);
+	if (!bd_new)
+		return NULL;
 
-		bd_new = block_device_init(sysfs_get_cntrl_devices(ctx), syspath);
-		if (!bd_new)
-			return 0;
-
-		ret = block_compare(bd, bd_new);
-		block_device_fini(bd_new);
-
-		return ret;
+	list_for_each(block_list, block) {
+		if (block_compare(block, bd_new))
+			break;
+		block = NULL;
 	}
+	block_device_fini(bd_new);
+	return block;
+}
+
+/*
+ * An NVMe multipath namespace head links the per-controller devices that
+ * ledmon tracks under its multipath/ directory.
+ */
+static struct block_device *_find_by_mpath(struct list *block_list, const char *syspath,
+					   struct led_ctx *ctx)
+{
+	struct block_device *block = NULL;
+	char mpath[PATH_MAX];
+	const char *path;
+	struct list paths;
+	int ret;
+
+	ret = snprintf(mpath, sizeof(mpath), "%s/multipath", syspath);
+	if (ret < 0 || ret >= (int)sizeof(mpath))
+		return NULL;
+	if (scan_dir(mpath, &paths) != 0)
+		return NULL;
+
+	list_for_each(&paths, path) {
+		block = _find_by_block(block_list, path, ctx);
+		if (block)
+			break;
+	}
+	list_erase(&paths);
+	return block;
+}
+
+/*
+ * Last resort: match on the /dev node name. Names are reused, so a stale entry
+ * for a drive that has since gone may carry the same name. A remove event is
+ * for a drive the last scan saw and an add event for one it did not, so prefer
+ * the entry whose presence fits the event.
+ */
+static struct block_device *_find_by_devnode(struct list *block_list, const char *syspath,
+					     bool present)
+{
+	struct block_device *block, *found = NULL;
+	const char *name = strrchr(syspath, '/');
+
+	name = name ? name + 1 : syspath;
+
+	list_for_each(block_list, block) {
+		const char *dev_name = strrchr(block->devnode, '/');
+
+		if (!dev_name || strcmp(dev_name + 1, name) != 0)
+			continue;
+		if ((block->timestamp == timestamp) == present)
+			return block;
+		if (!found)
+			found = block;
+	}
+	return found;
+}
+
+static struct block_device *_find_block(struct list *block_list, const char *syspath,
+					enum udev_action act, struct led_ctx *ctx)
+{
+	struct block_device *block;
+
+	list_for_each(block_list, block) {
+		if (strcmp(block->sysfs_path, syspath) == 0)
+			return block;
+	}
+
+	block = _find_by_block(block_list, syspath, ctx);
+	if (block || !is_subpath(syspath, NVME_SUBSYS_VIRT_PATH, strlen(NVME_SUBSYS_VIRT_PATH)))
+		return block;
+
+	/*
+	 * NVMe multipath events carry the virtual namespace-head path, which
+	 * cannot be resolved to a PCI controller, while ledmon tracks the
+	 * per-controller device. On add, follow the head's multipath/ links. On
+	 * remove the head is already gone from sysfs, so only the name is left.
+	 */
+	if (act == UDEV_ACTION_ADD) {
+		block = _find_by_mpath(block_list, syspath, ctx);
+		if (block)
+			return block;
+	}
+
+	return _find_by_devnode(block_list, syspath, act == UDEV_ACTION_REMOVE);
 }
 
 static int create_udev_monitor(void)
@@ -162,11 +251,7 @@ int handle_udev_event(struct list *ledmon_block_list, struct led_ctx *ctx)
 			goto exit;
 		}
 
-		list_for_each(ledmon_block_list, block) {
-			if (_compare(block, syspath, ctx))
-				break;
-			block = NULL;
-		}
+		block = _find_block(ledmon_block_list, syspath, act, ctx);
 
 		if (!block) {
 			if (act == UDEV_ACTION_REMOVE && _check_raid(syspath)) {

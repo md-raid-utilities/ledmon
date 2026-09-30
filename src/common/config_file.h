@@ -36,6 +36,7 @@ struct ledmon_conf {
 	int rebuild_blink_on_all;
 	int raid_members_only;
 	enum led_npem_backend npem_backend;
+	int blink_persistent_fail_on_readd;
 
 	/* allowlist and excludelist of controllers for blinking */
 	struct list cntrls_allowlist;

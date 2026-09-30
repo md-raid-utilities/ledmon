@@ -653,11 +653,23 @@ static void _add_block(struct block_device *block)
 	}
 	if (temp) {
 		enum led_ibpi_pattern ibpi = temp->ibpi;
+		bool was_raid_member;
+
 		temp->timestamp = block->timestamp;
+		/* Kernel names are reused; keep the /dev node udev matching relies on current. */
+		str_cpy(temp->devnode, block->devnode, PATH_MAX);
 		if (temp->ibpi == LED_IBPI_PATTERN_ADDED) {
 			temp->ibpi = LED_IBPI_PATTERN_ONESHOT_NORMAL;
 		} else if (temp->ibpi == LED_IBPI_PATTERN_ONESHOT_NORMAL) {
-			temp->ibpi = LED_IBPI_PATTERN_UNKNOWN;
+			/*
+			 * ONESHOT_NORMAL is consumed only once the controller has
+			 * accepted it (ibpi_prev is not updated on a transient
+			 * failure), so a failed write is retried. A new state from
+			 * the scan ends it early and is applied on the next scan.
+			 */
+			if (temp->ibpi_prev == LED_IBPI_PATTERN_ONESHOT_NORMAL ||
+			    block->ibpi != LED_IBPI_PATTERN_UNKNOWN)
+				temp->ibpi = LED_IBPI_PATTERN_UNKNOWN;
 		} else if (temp->ibpi != LED_IBPI_PATTERN_FAILED_DRIVE) {
 			if (block->ibpi == LED_IBPI_PATTERN_UNKNOWN) {
 				if ((temp->ibpi != LED_IBPI_PATTERN_UNKNOWN) &&
@@ -677,7 +689,42 @@ static void _add_block(struct block_device *block)
 			temp->ibpi = block->ibpi;
 		}
 
+		was_raid_member = temp->raid_dev != NULL;
 		_handle_fail_state(block, temp);
+
+		/*
+		 * If the drive was in FAILED_DRIVE and re-appeared with UNKNOWN,
+		 * map to ONESHOT_NORMAL to actively clear the amber LED.
+		 *
+		 * Guard conditions:
+		 * - temp->ibpi == UNKNOWN: _handle_fail_state left no active state,
+		 *   meaning the drive is not an active RAID volume member (which
+		 *   would have caused _handle_fail_state to restore FAILED_DRIVE or
+		 *   set HOTSPARE).
+		 * - !was_raid_member: the RAID association must be checked before
+		 *   _handle_fail_state runs. For a member dropped from a still
+		 *   existing array it sets FAILED_DRIVE and retypes raid_dev to
+		 *   CONTAINER; on the next scan it releases raid_dev and leaves
+		 *   UNKNOWN, which would otherwise look like a standalone drive and
+		 *   clear the failure of a genuine RAID member.
+		 * - !block->raid_dev: the current scan sees no RAID association,
+		 *   so the drive is standalone or its array is gone. This also
+		 *   catches the OOM path in _handle_fail_state where
+		 *   raid_device_duplicate() returns NULL and the function returns
+		 *   early without clearing block->raid_dev.
+		 * - !blink_persistent_fail_on_readd: recovery is opt-in. By default
+		 *   the failure indication persists when a drive reappears in the
+		 *   scan without a udev add event, so operators can still see that
+		 *   a standalone drive misbehaved. A udev add event (hot-plug)
+		 *   clears it regardless, via ADDED -> ONESHOT_NORMAL above.
+		 */
+		if (ibpi == LED_IBPI_PATTERN_FAILED_DRIVE &&
+		    block->ibpi == LED_IBPI_PATTERN_UNKNOWN &&
+		    temp->ibpi == LED_IBPI_PATTERN_UNKNOWN &&
+		    !was_raid_member &&
+		    !block->raid_dev &&
+		    !conf.blink_persistent_fail_on_readd)
+			temp->ibpi = LED_IBPI_PATTERN_ONESHOT_NORMAL;
 
 		if (ibpi != temp->ibpi && ibpi <= LED_IBPI_PATTERN_REMOVED)
 			log_info("CHANGE %s: from '%s' to '%s'", temp->sysfs_path, ibpi2str(ibpi),
@@ -775,15 +822,22 @@ static void _send_msg(struct block_device *block)
 		}
 	}
 
-	/**
-	 * ibpi_prev is always updated regardless send_message_fn status. It works this way from
-	 * the beginning.
-	 */
-	block->ibpi_prev = block->ibpi;
+	if (status) {
+		/*
+		 * A transient failure (e.g. the PCI slot lookup racing with hotplug)
+		 * leaves ibpi_prev untouched so the write is retried on the next scan.
+		 * STATUS_INVALID_STATE means the controller does not support the
+		 * pattern, so retrying cannot help: report it once and treat it as
+		 * applied.
+		 */
+		if (status != STATUS_INVALID_STATE || block->ibpi != block->ibpi_prev)
+			log_error("Unable to set %s IBPI state on %s. Status: %d",
+				  ibpi2str(block->ibpi), block->sysfs_path, status);
+		if (status != STATUS_INVALID_STATE)
+			return;
+	}
 
-	if (status)
-		log_error("Unable to set %s IBPI state on %s. Status: %d",
-			  ibpi2str(block->ibpi), block->sysfs_path, status);
+	block->ibpi_prev = block->ibpi;
 }
 
 static void _flush_msg(struct block_device *block)
@@ -884,6 +938,7 @@ static ledmon_status_code_t _init_ledmon_conf(void)
 	conf.blink_on_migration = 1;
 	conf.rebuild_blink_on_all = 0;
 	conf.raid_members_only = 0;
+	conf.blink_persistent_fail_on_readd = 1;
 	conf.scan_interval = LEDMON_DEF_SLEEP_INTERVAL;
 	return rc;
 }
