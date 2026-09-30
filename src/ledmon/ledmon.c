@@ -653,6 +653,8 @@ static void _add_block(struct block_device *block)
 	}
 	if (temp) {
 		enum led_ibpi_pattern ibpi = temp->ibpi;
+		bool was_raid_member;
+
 		temp->timestamp = block->timestamp;
 		if (temp->ibpi == LED_IBPI_PATTERN_ADDED) {
 			temp->ibpi = LED_IBPI_PATTERN_ONESHOT_NORMAL;
@@ -677,6 +679,7 @@ static void _add_block(struct block_device *block)
 			temp->ibpi = block->ibpi;
 		}
 
+		was_raid_member = temp->raid_dev != NULL;
 		_handle_fail_state(block, temp);
 
 		/*
@@ -688,6 +691,12 @@ static void _add_block(struct block_device *block)
 		 *   meaning the drive is not an active RAID volume member (which
 		 *   would have caused _handle_fail_state to restore FAILED_DRIVE or
 		 *   set HOTSPARE).
+		 * - !was_raid_member: the RAID association must be checked before
+		 *   _handle_fail_state runs. For a member dropped from a still
+		 *   existing array it sets FAILED_DRIVE and retypes raid_dev to
+		 *   CONTAINER; on the next scan it releases raid_dev and leaves
+		 *   UNKNOWN, which would otherwise look like a standalone drive and
+		 *   clear the failure of a genuine RAID member.
 		 * - !block->raid_dev: the current scan sees no RAID association,
 		 *   so the drive is standalone or its array is gone. This also
 		 *   catches the OOM path in _handle_fail_state where
@@ -697,6 +706,7 @@ static void _add_block(struct block_device *block)
 		if (ibpi == LED_IBPI_PATTERN_FAILED_DRIVE &&
 		    block->ibpi == LED_IBPI_PATTERN_UNKNOWN &&
 		    temp->ibpi == LED_IBPI_PATTERN_UNKNOWN &&
+		    !was_raid_member &&
 		    !block->raid_dev)
 			temp->ibpi = LED_IBPI_PATTERN_ONESHOT_NORMAL;
 
