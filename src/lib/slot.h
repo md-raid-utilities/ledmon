@@ -45,6 +45,16 @@ struct ses_slot_info {
 	int slot_num;
 };
 
+struct amd_sgpio_slot {
+	char em_buffer_path[PATH_MAX];
+	int ata_port;
+	int port;
+	int drive_bay;
+	int initiator;
+	struct led_ctx *ctx;
+};
+
+
 /**
  * @brief slot property parameters
  *
@@ -65,6 +75,7 @@ struct slot_property {
 		struct pci_slot *pci;
 		struct cntrl_device *cntrl;
 		struct ses_slot_info ses;
+		struct amd_sgpio_slot amd_sgpio;
 	} slot_spec;
 
 	/**

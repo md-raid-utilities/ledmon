@@ -30,6 +30,9 @@ config.log
 config.status
 stamp-h1
 tests/__pycache__/
+tests/ledctl/__pycache__/
+tests/lib_unit_test
+test-driver
 doc/ledctl.gz
 doc/ledmon.conf.gz
 doc/ledmon.gz

@@ -19,6 +19,7 @@
 #include "block.h"
 #include "config.h"
 #include "cntrl.h"
+#include "amd_sgpio.h"
 #include "enclosure.h"
 #include "kernel_npem.h"
 #include "list.h"
@@ -416,6 +417,8 @@ static void _scan_slots(struct led_ctx *ctx)
 				slot = npem_slot_property_init(cntrl_device);
 			if (slot)
 				list_append_ctx(&ctx->sys.slots_list, slot, ctx);
+		} else if (cntrl_device->cntrl_type == LED_CNTRL_TYPE_AMD) {
+			amd_sgpio_slots_add(cntrl_device, &ctx->sys.slots_list);
 		}
 	}
 

@@ -236,7 +236,7 @@ led_status_t led_slot_set(struct led_ctx *ctx, struct led_slot_list_entry *se,
 bool led_controller_slot_support(enum led_cntrl_type cntrl)
 {
 	return (cntrl == LED_CNTRL_TYPE_NPEM || cntrl == LED_CNTRL_TYPE_SCSI ||
-		cntrl == LED_CNTRL_TYPE_VMD);
+		cntrl == LED_CNTRL_TYPE_VMD || cntrl == LED_CNTRL_TYPE_AMD);
 }
 
 struct led_slot_list_entry *led_slot_next(struct led_slot_list *sl)
@@ -418,4 +418,3 @@ void led_cntrl_list_free(struct led_cntrl_list *cntrls)
 		free(cntrls);
 	}
 }
-
