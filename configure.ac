@@ -4,12 +4,12 @@ AC_PREREQ([2.69])
 
 
 m4_define([MAJOR_VERSION], 1)
-m4_define([MINOR_VERSION], 1)
+m4_define([MINOR_VERSION], 2)
 m4_define([MICRO_VERSION], 0)
 
 AC_INIT([ledmon],[MAJOR_VERSION.MINOR_VERSION.MICRO_VERSION])
 AC_CONFIG_MACRO_DIR([m4])
-AC_SUBST([PACKAGE_DATE], "2024")
+AC_SUBST([PACKAGE_DATE], "2026")
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 
 # If CFLAGS was not set, do not set default compiler flags, leave it empty.
