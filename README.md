@@ -1,6 +1,6 @@
 # Enclosure LED Utilities
 
-Current version is 1.1.0.
+Current version is 1.2.0.
 
 Enclosure LED Utilities is a Linux project for monitoring and controlling storage device LEDs
 on platforms. It enables visual identification and status indication (locate, fault, rebuild, etc.) for drives in enclosures and backplanes.

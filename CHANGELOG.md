@@ -1,3 +1,28 @@
+### v1.2.0
+
+[Commit list](https://github.com/md-raid-utilities/ledmon/compare/v1.1.0...v1.2.0)
+
+Enhancements
+
+* Add support for the Linux kernel NPEM driver with backend selection and auto-detection
+* Add persistent drive ID support to libled
+* Report additional LED states for SES devices
+* Add support for newer Dell systems
+* Add AMD SGPIO slot management support to ledctl
+* Add configurable failure LED persistence for reappearing non-RAID drives
+* Add NVMe multipath device support to ledmon
+
+Bug fixes
+
+* Fix failure LED recovery and retry handling on VMD controllers
+* Preserve failure LEDs for dropped RAID members
+* Prevent incorrect slot-to-device matches across PCI path components
+* Prevent crashes when comparing hot-removed devices without a controller
+* Correct SES element index interpretation when EIIOE is set
+* Fix IBPI pattern parsing and ledctl status reporting
+* Fix memory leaks and a use-after-return issue
+* Provide basename functionality on non-glibc systems
+
 ### v1.1.0
 
 [Commit list](https://github.com/md-raid-utilities/ledmon/compare/v1.0.0...v1.1.0)
